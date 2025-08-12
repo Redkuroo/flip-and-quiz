@@ -37,6 +37,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 export default function Home() {
   const [cards, setCards] = useState<Card[]>([]);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
   useEffect(() => {
     const assigned = shuffle(QUESTIONS).slice(0, 9);
@@ -59,6 +60,7 @@ export default function Home() {
         return { ...c, stage: "question", flipped: true };
       })
     );
+    setActiveIdx(idx);
   };
 
   const showAnswer = (idx: number) => {
@@ -70,6 +72,7 @@ export default function Home() {
         return { ...c, stage: "answered", flipped: false };
       })
     );
+    setActiveIdx(null);
   };
 
   const colorSets = [
@@ -103,13 +106,17 @@ export default function Home() {
             return (
               <button
                 key={card.id}
-                className={`perspective group relative aspect-square w-full select-none focus:outline-none ${disabled ? "pointer-events-none opacity-60" : ""}`}
+                className={`perspective group relative aspect-square w-full max-w-36 sm:max-w-40 md:max-w-44 mx-auto select-none focus:outline-none ${
+                  disabled ? "pointer-events-none opacity-60" : ""
+                }`}
                 aria-label={`Card ${card.id}`}
                 onClick={() => onCardClick(idx)}
               >
                 <div
                   className={`card-3d relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] ${
-                    card.flipped ? "[transform:rotateY(180deg)]" : ""
+                    card.flipped && activeIdx === idx
+                      ? "[transform:rotateY(180deg)]"
+                      : ""
                   }`}
                 >
                   {/* Front Face */}
@@ -155,6 +162,49 @@ export default function Home() {
             );
           })}
         </main>
+
+        {/* Centered enlarged overlay for active (question) card */}
+        {activeIdx !== null && cards[activeIdx]?.stage === "question" && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setActiveIdx(null)}
+          >
+            <div
+              className="perspective group relative w-full max-w-md sm:max-w-lg md:max-w-xl aspect-[3/4] select-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className={`relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] [transform:rotateY(180deg)]`}
+              >
+                {/* Front (would be visible if rotated back) */}
+                <div className="absolute inset-0 backface-hidden rounded-2xl shadow-xl border border-secondary/40 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center p-6">
+                  <span className="text-6xl sm:text-7xl font-black text-[var(--color-bg)] drop-shadow">
+                    {cards[activeIdx].id}
+                  </span>
+                </div>
+                {/* Back with Question */}
+                <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-2xl shadow-xl border border-secondary/40 bg-[var(--color-bg)] p-6 flex flex-col">
+                  <div className="font-heading text-secondary text-sm sm:text-base uppercase tracking-wide">Question</div>
+                  <div className="mt-3 text-primary text-xl sm:text-2xl font-semibold leading-snug flex-1">
+                    {cards[activeIdx].qa.q}
+                  </div>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => showAnswer(activeIdx)}
+                      className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                      style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
+                    >
+                      Show Answer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <footer className="mt-8 text-center text-sm text-secondary">
           {remaining === 0 ? "All cards answered! 🎉" : "Click a card to reveal a question."}
