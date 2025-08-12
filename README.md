@@ -1,6 +1,6 @@
 # Flip & Quiz
 
-A colorful, responsive quiz with 3x3 flip cards built with Next.js and Tailwind CSS.
+I made a colorful, responsive quiz with 3x3 flip cards built with Next.js and Tailwind CSS for my students.
 
 Features:
 - 3x3 grid of cards (1–9)
