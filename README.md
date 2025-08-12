@@ -3,7 +3,7 @@
 I made a colorful, responsive quiz with 3x3 flip cards built with Next.js and Tailwind CSS for my students.
 
 Features:
-- 3x3 grid of cards (1–9)
+- 3x4 grid of cards (1–12)
 - Flip to reveal a random question
 - "Show Answer" to flip back and reveal the answer
 - Cards become unclickable after answering

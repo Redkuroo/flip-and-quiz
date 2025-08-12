@@ -12,18 +12,18 @@ type Card = {
 };
 
 const QUESTIONS: QA[] = [
-  { q: "What is the capital of France?", a: "Paris" },
-  { q: "2 + 2 = ?", a: "4" },
-  { q: "Primary colors?", a: "Red, Blue, Yellow" },
-  { q: "Who wrote '1984'?", a: "George Orwell" },
-  { q: "Largest planet?", a: "Jupiter" },
-  { q: "HTTP stands for?", a: "HyperText Transfer Protocol" },
-  { q: "H2O is?", a: "Water" },
-  { q: "Speed of light ~?", a: "300,000 km/s" },
-  { q: "CSS stands for?", a: "Cascading Style Sheets" },
-  { q: "React is a ...?", a: "JavaScript library" },
-  { q: "PI ≈?", a: "3.14159" },
-  { q: "Next.js is built on?", a: "React" },
+  { q: "What is Node.js in simple terms?", a: "A special “kitchen” where JavaScript can run outside the browser, allowing it to work on your computer or server." },
+  { q: "Why does React Native need Node.js?", a: "To run the tools (like Metro bundler, npm/yarn, and CLI commands) that prepare and build your app before it runs on a phone." },
+  { q: "What is Metro bundler’s job in React Native?", a: "To gather all your code files and combine them into one bundle your phone can understand." },
+  { q: "What are npm and yarn used for in React Native development?", a: "They are package managers that download and manage libraries your app needs." },
+  { q: "In React Native, what are CLI tools?", a: "Command-line programs that let you run tasks like starting the app or building it for Android/iOS." },
+  { q: "What’s the difference between npm start --web and expo start --web?", a: "npm start --web runs the start script in package.json (which usually calls Expo), while expo start --web runs the Expo CLI directly." },
+  { q: "In package.json, why do scripts say expo start instead of npm start?", a: "Because Expo is the tool that actually starts and manages the project; npm only triggers the script." },
+  { q: "What does “JavaScript runtime outside the browser” mean?", a: "It means JavaScript can run in an environment like Node.js without needing a web browser." },
+  { q: "What command checks your installed Node.js version?", a: "node -v" },
+  { q: "What is the role of package.json in a Node.js or React Native project?", a: "It stores project metadata, scripts, and a list of dependencies." },
+  { q: "What is the difference between dependencies and devDependencies in package.json?", a: "dependencies are needed for the app to run, while devDependencies are only needed for development." },
+  { q: "What is npx used for in React Native development?", a: "It allows you to run commands from packages without installing them globally." },
 ];
 
 function shuffle<T>(arr: T[]): T[] {
@@ -40,8 +40,8 @@ export default function Home() {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    const assigned = shuffle(QUESTIONS).slice(0, 9);
-    const init: Card[] = Array.from({ length: 9 }, (_, i) => ({
+    const assigned = shuffle(QUESTIONS).slice(0, 12);
+    const init: Card[] = Array.from({ length: 12 }, (_, i) => ({
       id: i + 1,
       qa: assigned[i % assigned.length],
       stage: "initial",
