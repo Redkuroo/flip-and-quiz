@@ -38,6 +38,7 @@ function shuffle<T>(arr: T[]): T[] {
 export default function Home() {
   const [cards, setCards] = useState<Card[]>([]);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [overlayStep, setOverlayStep] = useState<"question" | "answer">("question");
   const [phase, setPhase] = useState<"auth" | "preview" | "game">("auth");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -82,10 +83,18 @@ export default function Home() {
         return { ...c, stage: "question", flipped: true };
       })
     );
-    setActiveIdx(idx);
+  setActiveIdx(idx);
+  setOverlayStep("question");
   };
 
+  // Step 1: Reveal answer in the overlay (do not lock yet)
   const showAnswer = (idx: number | null) => {
+    if (idx === null) return;
+    setOverlayStep("answer");
+  };
+
+  // Step 2: Finalize and lock the card after showing the answer
+  const finalizeAnswer = (idx: number | null) => {
     if (idx === null) return;
     setCards((prev) =>
       prev.map((c, i) => {
@@ -95,6 +104,7 @@ export default function Home() {
       })
     );
     setActiveIdx(null);
+    setOverlayStep("question");
   };
 
   const colorSets = [
@@ -250,7 +260,9 @@ export default function Home() {
                       {card.stage === "answered" ? (
                         <div className="text-center">
                           <div className="text-xs uppercase tracking-wide text-secondary mb-2">Answer</div>
-                          <div className="text-lg sm:text-xl font-semibold leading-snug text-primary">{card.qa.a}</div>
+                          <div className="text-lg sm:text-xl font-semibold leading-snug text-primary break-words overflow-hidden [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical]">
+                            {card.qa.a}
+                          </div>
                         </div>
                       ) : (
                         <span className="text-5xl sm:text-6xl font-black text-[var(--color-bg)] drop-shadow">{card.id}</span>
@@ -260,13 +272,13 @@ export default function Home() {
                     <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-xl shadow-lg border border-secondary/40 bg-[var(--color-bg)]/95 p-4 flex flex-col">
                       <div className="text-xs uppercase tracking-wide text-secondary">Question</div>
                       <div className="mt-2 text-base sm:text-lg font-medium flex-1 text-primary">{card.qa.q}</div>
-                      {card.stage === "question" && (
+          {card.stage === "question" && (
                         <div className="mt-4 flex justify-end">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              showAnswer(idx);
+            showAnswer(idx);
                             }}
                             className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
                             style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
@@ -299,18 +311,37 @@ export default function Home() {
                   <span className="text-6xl sm:text-7xl font-black text-[var(--color-bg)] drop-shadow">{cards[activeIdx].id}</span>
                 </div>
                 <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-2xl shadow-xl border border-secondary/40 bg-[var(--color-bg)] p-6 flex flex-col">
-                  <div className="font-heading text-secondary text-sm sm:text-base uppercase tracking-wide">Question</div>
-                  <div className="mt-3 text-primary text-xl sm:text-2xl font-semibold leading-snug flex-1">{cards[activeIdx].qa.q}</div>
-                  <div className="mt-6 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => showAnswer(activeIdx)}
-                      className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-                      style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
-                    >
-                      Show Answer
-                    </button>
-                  </div>
+                  {overlayStep === "question" ? (
+                    <>
+                      <div className="font-heading text-secondary text-sm sm:text-base uppercase tracking-wide">Question</div>
+                      <div className="mt-3 text-primary text-xl sm:text-2xl font-semibold leading-snug flex-1">{cards[activeIdx].qa.q}</div>
+                      <div className="mt-6 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => showAnswer(activeIdx)}
+                          className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                          style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
+                        >
+                          Show Answer
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="font-heading text-secondary text-sm sm:text-base uppercase tracking-wide">Answer</div>
+                      <div className="mt-3 text-primary text-xl sm:text-2xl leading-relaxed flex-1 overflow-y-auto whitespace-pre-wrap break-words">{cards[activeIdx].qa.a}</div>
+                      <div className="mt-6 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => finalizeAnswer(activeIdx)}
+                          className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                          style={{ backgroundColor: "var(--color-primary)", outlineColor: "var(--color-primary)" }}
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
