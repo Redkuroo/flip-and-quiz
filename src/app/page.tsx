@@ -355,7 +355,7 @@ export default function Home() {
                             className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
                             style={{ backgroundColor: "#ef4444", outlineColor: "#ef4444" }}
                           >
-                            Can't Answer
+                            Can&apos;t Answer
                           </button>
                         </div>
                       </form>
