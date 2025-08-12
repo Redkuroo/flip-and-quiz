@@ -104,13 +104,21 @@ export default function Home() {
             const disabled = card.stage === "answered";
             const gradient = colorSets[idx % colorSets.length];
             return (
-              <button
+              <div
                 key={card.id}
                 className={`perspective group relative aspect-square w-full max-w-36 sm:max-w-40 md:max-w-44 mx-auto select-none focus:outline-none ${
                   disabled ? "pointer-events-none opacity-60" : ""
                 }`}
                 aria-label={`Card ${card.id}`}
                 onClick={() => onCardClick(idx)}
+                role="button"
+                tabIndex={disabled ? -1 : 0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onCardClick(idx);
+                  }
+                }}
               >
                 <div
                   className={`card-3d relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] ${
@@ -158,7 +166,7 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </main>
