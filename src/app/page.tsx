@@ -1,103 +1,165 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type QA = { q: string; a: string };
+type Stage = "initial" | "question" | "answered";
+type Card = {
+  id: number;
+  qa: QA;
+  stage: Stage;
+  flipped: boolean; // true => showing back
+};
+
+const QUESTIONS: QA[] = [
+  { q: "What is the capital of France?", a: "Paris" },
+  { q: "2 + 2 = ?", a: "4" },
+  { q: "Primary colors?", a: "Red, Blue, Yellow" },
+  { q: "Who wrote '1984'?", a: "George Orwell" },
+  { q: "Largest planet?", a: "Jupiter" },
+  { q: "HTTP stands for?", a: "HyperText Transfer Protocol" },
+  { q: "H2O is?", a: "Water" },
+  { q: "Speed of light ~?", a: "300,000 km/s" },
+  { q: "CSS stands for?", a: "Cascading Style Sheets" },
+  { q: "React is a ...?", a: "JavaScript library" },
+  { q: "PI ≈?", a: "3.14159" },
+  { q: "Next.js is built on?", a: "React" },
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [cards, setCards] = useState<Card[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  useEffect(() => {
+    const assigned = shuffle(QUESTIONS).slice(0, 9);
+    const init: Card[] = Array.from({ length: 9 }, (_, i) => ({
+      id: i + 1,
+      qa: assigned[i % assigned.length],
+      stage: "initial",
+      flipped: false,
+    }));
+    setCards(init);
+  }, []);
+
+  const remaining = useMemo(() => cards.filter((c) => c.stage !== "answered").length, [cards]);
+
+  const onCardClick = (idx: number) => {
+    setCards((prev) =>
+      prev.map((c, i) => {
+        if (i !== idx) return c;
+        if (c.stage !== "initial") return c; // only first click
+        return { ...c, stage: "question", flipped: true };
+      })
+    );
+  };
+
+  const showAnswer = (idx: number) => {
+    setCards((prev) =>
+      prev.map((c, i) => {
+        if (i !== idx) return c;
+        if (c.stage !== "question") return c;
+        // Flip back and mark answered
+        return { ...c, stage: "answered", flipped: false };
+      })
+    );
+  };
+
+  const colorSets = [
+    "from-pink-500 to-rose-500",
+    "from-orange-500 to-amber-500",
+    "from-lime-500 to-green-500",
+    "from-emerald-500 to-teal-500",
+    "from-cyan-500 to-sky-500",
+    "from-blue-500 to-indigo-500",
+    "from-violet-500 to-fuchsia-500",
+    "from-red-500 to-orange-500",
+    "from-amber-500 to-lime-500",
+  ];
+
+  return (
+    <div className="min-h-dvh w-full bg-[var(--background)] text-[var(--foreground)]">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-primary">
+            Flip & Quiz
+          </h1>
+          <div className="rounded-full px-4 py-2 text-sm sm:text-base shadow-sm border border-secondary/40 bg-secondary/20 text-primary">
+            Cards left: <span className="font-semibold">{remaining}</span>/9
+          </div>
+        </header>
+
+        <main className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          {cards.map((card, idx) => {
+            const disabled = card.stage === "answered";
+            const gradient = colorSets[idx % colorSets.length];
+            return (
+              <button
+                key={card.id}
+                className={`perspective group relative aspect-square w-full select-none focus:outline-none ${disabled ? "pointer-events-none opacity-60" : ""}`}
+                aria-label={`Card ${card.id}`}
+                onClick={() => onCardClick(idx)}
+              >
+                <div
+                  className={`card-3d relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] ${
+                    card.flipped ? "[transform:rotateY(180deg)]" : ""
+                  }`}
+                >
+                  {/* Front Face */}
+                  <div
+                    className={`absolute inset-0 backface-hidden rounded-xl shadow-lg border border-secondary/40 overflow-hidden ${
+                      card.stage === "answered"
+                        ? "bg-[var(--color-bg)]/80"
+                        : `bg-gradient-to-br ${gradient}`
+                    } flex items-center justify-center p-4`}
+                  >
+                    {card.stage === "answered" ? (
+                      <div className="text-center">
+                        <div className="text-xs uppercase tracking-wide text-secondary mb-2">Answer</div>
+                        <div className="text-lg sm:text-xl font-semibold leading-snug text-primary">{card.qa.a}</div>
+                      </div>
+                    ) : (
+                      <span className="text-5xl sm:text-6xl font-black text-[var(--color-bg)] drop-shadow">{card.id}</span>
+                    )}
+                  </div>
+
+                  {/* Back Face */}
+                  <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-xl shadow-lg border border-secondary/40 bg-[var(--color-bg)]/95 p-4 flex flex-col">
+                    <div className="text-xs uppercase tracking-wide text-secondary">Question</div>
+                    <div className="mt-2 text-base sm:text-lg font-medium flex-1 text-primary">{card.qa.q}</div>
+                    {card.stage === "question" && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showAnswer(idx);
+                          }}
+                          className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                          style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
+                        >
+                          Show Answer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </main>
+
+        <footer className="mt-8 text-center text-sm text-secondary">
+          {remaining === 0 ? "All cards answered! 🎉" : "Click a card to reveal a question."}
+        </footer>
+      </div>
     </div>
   );
 }

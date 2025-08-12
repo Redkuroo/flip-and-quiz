@@ -1,3 +1,26 @@
+# Flip & Quiz
+
+A colorful, responsive quiz with 3x3 flip cards built with Next.js and Tailwind CSS.
+
+Features:
+- 3x3 grid of cards (1–9)
+- Flip to reveal a random question
+- "Show Answer" to flip back and reveal the answer
+- Cards become unclickable after answering
+- Progress tracker (cards left)
+
+Run locally:
+
+```powershell
+npm run dev
+```
+
+Open http://localhost:3000
+
+Replace sample Q&A in `src/app/page.tsx` as needed.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
