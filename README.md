@@ -1,23 +1,49 @@
 # Flip & Quiz
 
-I made a colorful, responsive quiz with 3x3 flip cards built with Next.js and Tailwind CSS for my students.
+A colorful, responsive quiz built with Next.js and Tailwind CSS. Click cards to reveal questions; show answers; track progress. Includes a Wall of Shame for students who can’t answer.
 
-Features:
-- 3x4 grid of cards (1–12)
-- Flip to reveal a random question
-- "Show Answer" to flip back and reveal the answer
-- Cards become unclickable after answering
-- Progress tracker (cards left)
+## Features
+- 3x4 grid of cards (1–12), randomized Q&A
+- Phases:
+	- Auth: Teacher enters password (see configuration)
+	- Preview: Show all questions with a prep timer
+	- Game: Click a card to reveal a question in an overlay
+- In overlay: Show Answer or Can’t Answer
+	- Can’t Answer: prompts for student name and locks the card
+	- Done (after showing answer): locks the card
+- Wall of Shame: Displays student name and the question below the teacher password (Auth phase)
+- Progress tracker: Cards left counter
+- Responsive design with vibrant gradients
 
-Run locally:
+## Configure
+- Teacher password: set NEXT_PUBLIC_TEACHER_PASSWORD (default: `teacher`)
+	- Windows PowerShell (current session only):
+		```powershell
+		$env:NEXT_PUBLIC_TEACHER_PASSWORD = "my-secret"; npm run dev
+		```
+	- For development persistence, create `.env.local` in project root:
+		```env
+		NEXT_PUBLIC_TEACHER_PASSWORD=my-secret
+		```
+
+## Edit Questions
+Update the `QUESTIONS` array in `src/app/page.tsx`.
+
+## Run locally
 
 ```powershell
+npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+Then open http://localhost:3000
 
-Replace sample Q&A in `src/app/page.tsx` as needed.
+## Build and run production
+
+```powershell
+npm run build
+npm start
+```
 
 ---
 
