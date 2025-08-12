@@ -216,14 +216,6 @@ export default function Home() {
                     Pause
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setPhase("game")}
-                  className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-                  style={{ backgroundColor: "var(--color-primary)", outlineColor: "var(--color-primary)" }}
-                >
-                  Skip to Game
-                </button>
               </div>
             </div>
           </section>
