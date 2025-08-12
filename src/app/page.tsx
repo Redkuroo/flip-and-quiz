@@ -38,6 +38,14 @@ function shuffle<T>(arr: T[]): T[] {
 export default function Home() {
   const [cards, setCards] = useState<Card[]>([]);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [phase, setPhase] = useState<"auth" | "preview" | "game">("auth");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const TEACHER_PASSWORD = process.env.NEXT_PUBLIC_TEACHER_PASSWORD || "teacher";
+
+  const [prepSeconds, setPrepSeconds] = useState(60);
+  const [remaining, setRemaining] = useState(60);
+  const [previewRunning, setPreviewRunning] = useState(false);
 
   useEffect(() => {
     const assigned = shuffle(QUESTIONS).slice(0, 12);
@@ -48,27 +56,41 @@ export default function Home() {
       flipped: false,
     }));
     setCards(init);
+    setRemaining(prepSeconds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const remaining = useMemo(() => cards.filter((c) => c.stage !== "answered").length, [cards]);
+  useEffect(() => {
+    if (!previewRunning || phase !== "preview") return;
+    if (remaining <= 0) {
+      setPreviewRunning(false);
+      setPhase("game");
+      return;
+    }
+    const t = setTimeout(() => setRemaining((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [previewRunning, remaining, phase]);
+
+  const cardsLeft = useMemo(() => cards.filter((c) => c.stage !== "answered").length, [cards]);
 
   const onCardClick = (idx: number) => {
+    if (phase !== "game") return;
     setCards((prev) =>
       prev.map((c, i) => {
         if (i !== idx) return c;
-        if (c.stage !== "initial") return c; // only first click
+        if (c.stage !== "initial") return c;
         return { ...c, stage: "question", flipped: true };
       })
     );
     setActiveIdx(idx);
   };
 
-  const showAnswer = (idx: number) => {
+  const showAnswer = (idx: number | null) => {
+    if (idx === null) return;
     setCards((prev) =>
       prev.map((c, i) => {
         if (i !== idx) return c;
         if (c.stage !== "question") return c;
-        // Flip back and mark answered
         return { ...c, stage: "answered", flipped: false };
       })
     );
@@ -91,88 +113,185 @@ export default function Home() {
     <div className="min-h-dvh w-full bg-[var(--background)] text-[var(--foreground)]">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-primary">
-            Flip & Quiz
-          </h1>
-          <div className="rounded-full px-4 py-2 text-sm sm:text-base shadow-sm border border-secondary/40 bg-secondary/20 text-primary">
-            Cards left: <span className="font-semibold">{remaining}</span>/9
-          </div>
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-primary">Flip & Quiz</h1>
+          {phase === "game" && (
+            <div className="rounded-full px-4 py-2 text-sm sm:text-base shadow-sm border border-secondary/40 bg-secondary/20 text-primary">
+              Cards left: <span className="font-semibold">{cardsLeft}</span>/{cards.length}
+            </div>
+          )}
         </header>
 
-        <main className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-          {cards.map((card, idx) => {
-            const disabled = card.stage === "answered";
-            const gradient = colorSets[idx % colorSets.length];
-            return (
-              <div
-                key={card.id}
-                className={`perspective group relative aspect-square w-full max-w-36 sm:max-w-40 md:max-w-44 mx-auto select-none focus:outline-none ${
-                  disabled ? "pointer-events-none opacity-60" : ""
-                }`}
-                aria-label={`Card ${card.id}`}
-                onClick={() => onCardClick(idx)}
-                role="button"
-                tabIndex={disabled ? -1 : 0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onCardClick(idx);
-                  }
-                }}
+        {phase === "auth" && (
+          <section className="mt-10 mx-auto max-w-md rounded-2xl border border-secondary/40 bg-[color-mix(in_oklab,var(--color-bg),#ffffff_5%)] p-6 shadow">
+            <h2 className="font-heading text-xl text-primary mb-3">Teacher Access</h2>
+            <p className="text-sm text-secondary/80 mb-4">Enter the teacher password to start the preparation preview.</p>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (password === TEACHER_PASSWORD) {
+                  setAuthError("");
+                  setRemaining(prepSeconds);
+                  setPhase("preview");
+                } else {
+                  setAuthError("Incorrect password");
+                }
+              }}
+            >
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full rounded-lg border border-secondary/40 bg-[var(--color-bg)] px-3 py-2 text-primary placeholder:text-secondary/60 focus:outline-2 focus:outline-offset-2"
+                style={{ outlineColor: "var(--color-accent)" }}
+              />
+              {authError && <div className="text-xs text-red-400">{authError}</div>}
+              <button
+                type="submit"
+                className="mt-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
               >
-                <div
-                  className={`card-3d relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] ${
-                    card.flipped && activeIdx === idx
-                      ? "[transform:rotateY(180deg)]"
-                      : ""
-                  }`}
-                >
-                  {/* Front Face */}
-                  <div
-                    className={`absolute inset-0 backface-hidden rounded-xl shadow-lg border border-secondary/40 overflow-hidden ${
-                      card.stage === "answered"
-                        ? "bg-[var(--color-bg)]/80"
-                        : `bg-gradient-to-br ${gradient}`
-                    } flex items-center justify-center p-4`}
-                  >
-                    {card.stage === "answered" ? (
-                      <div className="text-center">
-                        <div className="text-xs uppercase tracking-wide text-secondary mb-2">Answer</div>
-                        <div className="text-lg sm:text-xl font-semibold leading-snug text-primary">{card.qa.a}</div>
-                      </div>
-                    ) : (
-                      <span className="text-5xl sm:text-6xl font-black text-[var(--color-bg)] drop-shadow">{card.id}</span>
-                    )}
-                  </div>
+                Continue
+              </button>
+            </form>
+          </section>
+        )}
 
-                  {/* Back Face */}
-                  <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-xl shadow-lg border border-secondary/40 bg-[var(--color-bg)]/95 p-4 flex flex-col">
-                    <div className="text-xs uppercase tracking-wide text-secondary">Question</div>
-                    <div className="mt-2 text-base sm:text-lg font-medium flex-1 text-primary">{card.qa.q}</div>
-                    {card.stage === "question" && (
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            showAnswer(idx);
-                          }}
-                          className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-                          style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
-                        >
-                          Show Answer
-                        </button>
-                      </div>
-                    )}
+        {phase === "preview" && (
+          <section className="mt-8">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-heading text-xl text-primary">Preparation Preview</h2>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-secondary/80">Time (sec)</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={600}
+                  value={prepSeconds}
+                  onChange={(e) => {
+                    const v = Number(e.target.value || 0);
+                    setPrepSeconds(v);
+                    setRemaining(v);
+                  }}
+                  className="w-20 rounded-md border border-secondary/40 bg-[var(--color-bg)] px-2 py-1 text-primary focus:outline-2 focus:outline-offset-2"
+                  style={{ outlineColor: "var(--color-accent)" }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-secondary/40 p-4">
+              <div className="text-secondary/80 text-sm">All Questions</div>
+              <ol className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3 list-decimal list-inside">
+                {cards.map((c) => (
+                  <li key={c.id} className="text-primary">{c.qa.q}</li>
+                ))}
+              </ol>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-secondary/80">
+                Time Remaining:
+                <span className="ml-2 font-heading text-2xl text-primary tabular-nums">
+                  {Math.floor(remaining / 60).toString().padStart(2, "0")}:{(remaining % 60).toString().padStart(2, "0")}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                {!previewRunning ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRunning(true)}
+                    className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
+                  >
+                    Start Prep Timer
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRunning(false)}
+                    className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    style={{ backgroundColor: "var(--color-secondary)", outlineColor: "var(--color-secondary)" }}
+                  >
+                    Pause
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPhase("game")}
+                  className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={{ backgroundColor: "var(--color-primary)", outlineColor: "var(--color-primary)" }}
+                >
+                  Skip to Game
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {phase === "game" && (
+          <main className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+            {cards.map((card, idx) => {
+              const disabled = card.stage === "answered";
+              const gradient = colorSets[idx % colorSets.length];
+              return (
+                <div
+                  key={card.id}
+                  className={`perspective group relative aspect-square w-full max-w-36 sm:max-w-40 md:max-w-44 mx-auto select-none focus:outline-none ${disabled ? "pointer-events-none opacity-60" : ""}`}
+                  aria-label={`Card ${card.id}`}
+                  onClick={() => onCardClick(idx)}
+                  role="button"
+                  tabIndex={disabled ? -1 : 0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onCardClick(idx);
+                    }
+                  }}
+                >
+                  <div
+                    className={`card-3d relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] ${card.flipped && activeIdx === idx ? "[transform:rotateY(180deg)]" : ""}`}
+                  >
+                    <div
+                      className={`absolute inset-0 backface-hidden rounded-xl shadow-lg border border-secondary/40 overflow-hidden ${card.stage === "answered" ? "bg-[var(--color-bg)]/80" : `bg-gradient-to-br ${gradient}`} flex items-center justify-center p-4`}
+                    >
+                      {card.stage === "answered" ? (
+                        <div className="text-center">
+                          <div className="text-xs uppercase tracking-wide text-secondary mb-2">Answer</div>
+                          <div className="text-lg sm:text-xl font-semibold leading-snug text-primary">{card.qa.a}</div>
+                        </div>
+                      ) : (
+                        <span className="text-5xl sm:text-6xl font-black text-[var(--color-bg)] drop-shadow">{card.id}</span>
+                      )}
+                    </div>
+
+                    <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-xl shadow-lg border border-secondary/40 bg-[var(--color-bg)]/95 p-4 flex flex-col">
+                      <div className="text-xs uppercase tracking-wide text-secondary">Question</div>
+                      <div className="mt-2 text-base sm:text-lg font-medium flex-1 text-primary">{card.qa.q}</div>
+                      {card.stage === "question" && (
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showAnswer(idx);
+                            }}
+                            className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
+                          >
+                            Show Answer
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </main>
+              );
+            })}
+          </main>
+        )}
 
-        {/* Centered enlarged overlay for active (question) card */}
-        {activeIdx !== null && cards[activeIdx]?.stage === "question" && (
+        {phase === "game" && activeIdx !== null && cards[activeIdx]?.stage === "question" && (
           <div
             role="dialog"
             aria-modal="true"
@@ -183,21 +302,13 @@ export default function Home() {
               className="perspective group relative w-full max-w-md sm:max-w-lg md:max-w-xl aspect-[3/4] select-none"
               onClick={(e) => e.stopPropagation()}
             >
-              <div
-                className={`relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] [transform:rotateY(180deg)]`}
-              >
-                {/* Front (would be visible if rotated back) */}
+              <div className={`relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] [transform:rotateY(180deg)]`}>
                 <div className="absolute inset-0 backface-hidden rounded-2xl shadow-xl border border-secondary/40 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center p-6">
-                  <span className="text-6xl sm:text-7xl font-black text-[var(--color-bg)] drop-shadow">
-                    {cards[activeIdx].id}
-                  </span>
+                  <span className="text-6xl sm:text-7xl font-black text-[var(--color-bg)] drop-shadow">{cards[activeIdx].id}</span>
                 </div>
-                {/* Back with Question */}
                 <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-2xl shadow-xl border border-secondary/40 bg-[var(--color-bg)] p-6 flex flex-col">
                   <div className="font-heading text-secondary text-sm sm:text-base uppercase tracking-wide">Question</div>
-                  <div className="mt-3 text-primary text-xl sm:text-2xl font-semibold leading-snug flex-1">
-                    {cards[activeIdx].qa.q}
-                  </div>
+                  <div className="mt-3 text-primary text-xl sm:text-2xl font-semibold leading-snug flex-1">{cards[activeIdx].qa.q}</div>
                   <div className="mt-6 flex justify-end">
                     <button
                       type="button"
@@ -215,7 +326,13 @@ export default function Home() {
         )}
 
         <footer className="mt-8 text-center text-sm text-secondary">
-          {remaining === 0 ? "All cards answered! 🎉" : "Click a card to reveal a question."}
+          {phase === "game"
+            ? cardsLeft === 0
+              ? "All cards answered! 🎉"
+              : "Click a card to reveal a question."
+            : phase === "preview"
+            ? "Students: Review all questions. Timer will end soon."
+            : "Teacher: Enter password to begin."}
         </footer>
       </div>
     </div>
