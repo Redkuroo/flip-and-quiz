@@ -48,6 +48,9 @@ export default function Home() {
   const [remaining, setRemaining] = useState(60);
   const [previewRunning, setPreviewRunning] = useState(false);
 
+  const [wallOfShame, setWallOfShame] = useState<{ name: string; question: string }[]>([]);
+  const [shameInput, setShameInput] = useState("");
+
   useEffect(() => {
     const assigned = shuffle(QUESTIONS).slice(0, 12);
     const init: Card[] = Array.from({ length: 12 }, (_, i) => ({
@@ -105,6 +108,14 @@ export default function Home() {
     );
     setActiveIdx(null);
     setOverlayStep("question");
+  };
+
+  const addToWallOfShame = (name: string, idx: number | null) => {
+    if (!name.trim()) return;
+    const question = idx !== null && cards[idx] ? cards[idx].qa.q : "";
+    setWallOfShame((prev) => [...prev, { name: name.trim(), question }]);
+    finalizeAnswer(idx);
+    setShameInput("");
   };
 
   const colorSets = [
@@ -165,6 +176,20 @@ export default function Home() {
                 Continue
               </button>
             </form>
+
+            {wallOfShame.length > 0 && (
+              <div className="mt-8">
+                <div className="font-heading text-base text-primary mb-2">Wall of Shame</div>
+                <ul className="list-disc list-inside text-secondary/80 text-sm space-y-1">
+                  {wallOfShame.map((entry, idx) => (
+                    <li key={idx}>
+                      <span className="font-medium text-primary">{entry.name}</span>
+                      <span className="text-secondary/70"> — {entry.question}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         )}
 
@@ -272,21 +297,7 @@ export default function Home() {
                     <div className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-xl shadow-lg border border-secondary/40 bg-[var(--color-bg)]/95 p-4 flex flex-col">
                       <div className="text-xs uppercase tracking-wide text-secondary">Question</div>
                       <div className="mt-2 text-base sm:text-lg font-medium flex-1 text-primary">{card.qa.q}</div>
-          {card.stage === "question" && (
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-            showAnswer(idx);
-                            }}
-                            className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-                            style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
-                          >
-                            Show Answer
-                          </button>
-                        </div>
-                      )}
+                      {card.stage === "question" && <div className="mt-4 text-right text-secondary/70 text-xs">Open card to answer…</div>}
                     </div>
                   </div>
                 </div>
@@ -315,16 +326,39 @@ export default function Home() {
                     <>
                       <div className="font-heading text-secondary text-sm sm:text-base uppercase tracking-wide">Question</div>
                       <div className="mt-3 text-primary text-xl sm:text-2xl font-semibold leading-snug flex-1">{cards[activeIdx].qa.q}</div>
-                      <div className="mt-6 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => showAnswer(activeIdx)}
-                          className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-                          style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
-                        >
-                          Show Answer
-                        </button>
-                      </div>
+                      <form
+                        className="mt-4 flex flex-col gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          addToWallOfShame(shameInput, activeIdx);
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={shameInput}
+                          onChange={(e) => setShameInput(e.target.value)}
+                          placeholder="Student name"
+                          className="rounded-md border border-secondary/40 px-2 py-2 text-sm text-primary bg-[var(--color-bg)] placeholder:text-secondary/60 focus:outline-2 focus:outline-offset-2"
+                          style={{ outlineColor: "var(--color-accent)" }}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => showAnswer(activeIdx)}
+                            className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            style={{ backgroundColor: "var(--color-accent)", outlineColor: "var(--color-accent)" }}
+                          >
+                            Show Answer
+                          </button>
+                          <button
+                            type="submit"
+                            className="inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold text-[var(--color-bg)] shadow hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+                            style={{ backgroundColor: "#ef4444", outlineColor: "#ef4444" }}
+                          >
+                            Can't Answer
+                          </button>
+                        </div>
+                      </form>
                     </>
                   ) : (
                     <>
